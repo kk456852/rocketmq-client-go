@@ -55,6 +55,8 @@ func main() {
 	if err != nil {
 		fmt.Println("Create topic error:", err.Error())
 	}
+	//get topic status
+	_, err = testAdmin.GetTopicStatus(context.Background(), topic, brokerAddr)
 
 	//deletetopic
 	err = testAdmin.DeleteTopic(

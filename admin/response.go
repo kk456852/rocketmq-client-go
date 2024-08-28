@@ -17,7 +17,11 @@ limitations under the License.
 
 package admin
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 type RemotingSerializable struct {
 }
@@ -62,6 +66,72 @@ type TopicList struct {
 	TopicList  []string
 	BrokerAddr string
 	RemotingSerializable
+}
+
+type TopicStatus map[Key]OffsetData
+
+type OffsetData struct {
+	LastUpdateTimestamp int
+	MaxOffset           int
+	MinOffset           int
+}
+
+type Key struct {
+	BrokerName string
+	QueueID    int
+	Topic      string
+}
+
+func (t *TopicStatus) Decode(input string) (*TopicStatus, error) {
+	input = strings.TrimPrefix(input, "{\"offsetTable\":{")
+	input = strings.TrimSuffix(input, "}}")
+
+	// 分割每个键值对
+	pairs := strings.Split(input, "},{")
+
+	// 创建结果映射
+	result := make(TopicStatus)
+
+	for _, pair := range pairs {
+		// 分割键和值
+		parts := strings.Split(pair, "}:{")
+		keyPart := strings.Trim(parts[0], "{}")
+		valuePart := parts[1]
+
+		// 进一步解析键
+		keyFields := strings.Split(keyPart, ",")
+		var key Key
+		for _, field := range keyFields {
+			kv := strings.Split(field, ":")
+			switch kv[0] {
+			case "\"brokerName\"":
+				key.BrokerName = strings.Trim(kv[1], "\"")
+			case "\"queueId\"":
+				fmt.Sscanf(kv[1], "%d", &key.QueueID)
+			case "\"topic\"":
+				key.Topic = strings.Trim(kv[1], "\"")
+			}
+		}
+
+		// 解析值
+		var value OffsetData
+		valueFields := strings.Split(valuePart, ",")
+		for _, field := range valueFields {
+			kv := strings.Split(field, ":")
+			switch kv[0] {
+			case "\"lastUpdateTimestamp\"":
+				fmt.Sscanf(kv[1], "%d", &value.LastUpdateTimestamp)
+			case "\"maxOffset\"":
+				fmt.Sscanf(kv[1], "%d", &value.MaxOffset)
+			case "\"minOffset\"":
+				fmt.Sscanf(kv[1], "%d", &value.MinOffset)
+			}
+		}
+
+		// 将解析结果存入映射
+		result[key] = value
+	}
+	return &result, nil
 }
 
 type SubscriptionGroupWrapper struct {

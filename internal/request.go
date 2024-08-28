@@ -46,6 +46,7 @@ const (
 	ReqCheckTransactionState         = int16(39)
 	ReqNotifyConsumerIdsChanged      = int16(40)
 	ReqGetAllSubscriptionGroupConfig = int16(201)
+	ReqGetTopicStatsInfo             = int16(202)
 	ReqGetAllTopicListFromNameServer = int16(206)
 	ReqDeleteTopicInBroker           = int16(215)
 	ReqDeleteTopicInNameSrv          = int16(216)
@@ -382,6 +383,16 @@ type CreateTopicRequestHeader struct {
 	TopicFilterType string
 	TopicSysFlag    int
 	Order           bool
+}
+
+type GetTopicStatRequestHeader struct {
+	Topic string
+}
+
+func (request *GetTopicStatRequestHeader) Encode() map[string]string {
+	maps := make(map[string]string)
+	maps["topic"] = request.Topic
+	return maps
 }
 
 func (request *CreateTopicRequestHeader) Encode() map[string]string {

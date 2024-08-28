@@ -160,6 +160,26 @@ func (a *admin) FetchAllTopicList(ctx context.Context) (*TopicList, error) {
 	return &topicList, nil
 }
 
+func (a *admin) GetTopicStatus(ctx context.Context, topic string, brokerAddr string) (*TopicStatus, error) {
+	requestHeader := &internal.GetTopicStatRequestHeader{
+		Topic: topic,
+	}
+	cmd := remote.NewRemotingCommand(internal.ReqGetTopicStatsInfo, requestHeader, nil)
+	response, err := a.cli.InvokeSync(ctx, brokerAddr, cmd, 3*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	var topicStatus *TopicStatus
+	topicStatus, err = topicStatus.Decode(string(response.Body))
+	if err != nil {
+		rlog.Error("Fetch topic status decode error", map[string]interface{}{
+			rlog.LogKeyUnderlayError: err,
+		})
+		return nil, err
+	}
+	return topicStatus, nil
+}
+
 // CreateTopic create topic.
 // TODO: another implementation like sarama, without brokerAddr as input
 func (a *admin) CreateTopic(ctx context.Context, opts ...OptionCreate) error {
